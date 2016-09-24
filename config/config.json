@@ -1,0 +1,9 @@
+{
+    "options": {
+        "show_help": true,
+        "show_keys": false,
+        "default_first_key": true
+    },
+    "keys": {
+    }
+}
