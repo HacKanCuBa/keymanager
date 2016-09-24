@@ -5,6 +5,9 @@ The output is always plain text (o a stream for download).
 
 Feel free to use, fork, share, etc. Create pull requests or issues if needed :)
 
+## PHP version
+This works for **PHP v5.6+**. If you are on an older version, replace the constant-defined array in keymanager.class.php:15 for a variable, then call it in keymanager.class.php:readConfig:64-65.
+
 ## Configuration
 Edit config/config.json (it's on a separated dir for security).
 
