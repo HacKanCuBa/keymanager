@@ -1,18 +1,18 @@
 <?php
 
 /**
- *	Simple GPG Key manager, to display or allow key file download 
- * (must be ASCII armored!)
- *	by HacKan GNU GPL v3.0+
+ *    Simple GPG Key manager, to display or allow key file download 
+ *    (must be ASCII armored!)
+ *    by HacKan GNU GPL v3.0+
  *
- *	v1.0
+ *    v1.0
  */
 class KeyManager
 {
     /**
      * Structure for config array
      */
-	const CONFIGSTRUCT = [
+    const CONFIGSTRUCT = [
         'options' => [
             'show_help' => false,
             'show_keys'=> false,
@@ -21,8 +21,8 @@ class KeyManager
         'keys' => [],
     ];
 
-	const OUTPUT_TYPE_TEXT = 1;
-	const OUTPUT_TYPE_FILE = 2;
+    const OUTPUT_TYPE_TEXT = 1;
+    const OUTPUT_TYPE_FILE = 2;
 
     /**
      *
@@ -55,8 +55,8 @@ class KeyManager
     private $Keys = [];
     
     protected function readConfig($configfile)
-	{
-		if (file_exists($configfile) 
+    {
+        if (file_exists($configfile) 
             && ($settings = json_decode(file_get_contents($configfile), true))
         ) {
             // NetBeans 8.1 shows error here but, worry not, the sentence is fine.
@@ -67,10 +67,10 @@ class KeyManager
             $settings['keys'] = isset($settings['keys']) ? $settings['keys'] : [];
 
             return $settings;
-		}
+        }
         
         return [];
-	}
+    }
     
     protected function getUsageMessage()
     {
@@ -122,9 +122,9 @@ class KeyManager
     }
 
     public function __construct($configfile = '')
-	{
+    {
         $this->setConfig($configfile);
-	}
+    }
     
     public function setConfig($configfile)
     {
