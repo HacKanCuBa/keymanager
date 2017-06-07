@@ -1,11 +1,30 @@
 <?php
+namespace HC\OpenPGP;
 
 /**
  *    Simple GPG Key manager, to display or allow key file download 
  *    (must be ASCII armored!)
  *    by HacKan GNU GPL v3.0+
  *
- *    v1.0
+ *    v2.1.8
+ *
+ * ----------------------------------------------------------------------------
+ *     Copyright (C) 2017 HacKan (https://hackan.net)
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ----------------------------------------------------------------------------
+ *
  */
 class KeyManager
 {
@@ -19,10 +38,16 @@ class KeyManager
             'default_first_key' => false,
         ],
         'keys' => [],
+        'history' => ''
     ];
 
     const OUTPUT_TYPE_TEXT = 1;
     const OUTPUT_TYPE_FILE = 2;
+
+    /**
+     * @var string Full path configuration directory (extracted from $configfile)
+     */
+    protected $ConfigDir = '';
 
     /**
      *
@@ -41,7 +66,13 @@ class KeyManager
      * @var bool User provided Help Flag
      */
     private $HelpFlag = false;
-    
+
+    /**
+     *
+     * @var bool User provided Show History Flag
+     */
+    private $ShowHistoryFlag = false;
+
     /**
      *
      * @var array Options (Options key from the Config)
@@ -53,6 +84,12 @@ class KeyManager
      * @var array Keys (Keys key from the Config)
      */
     private $Keys = [];
+
+    /**
+     *
+     * @var string History file name (inside Config dir)
+     */
+    private $History = '';
     
     protected function readConfig($configfile)
     {
@@ -66,6 +103,8 @@ class KeyManager
             
             $settings['keys'] = isset($settings['keys']) ? $settings['keys'] : [];
 
+            $settings['history'] = isset($settings['history']) ? $settings['history'] : '';
+
             return $settings;
         }
         
@@ -76,7 +115,9 @@ class KeyManager
     {
         $message = "Usage: " . PHP_EOL
                 . "\tDisplay key: ?k=<keyId>" . PHP_EOL
-                . "\tDownload key: ?k=<keyId>&d" . PHP_EOL;
+                . "\tDownload key: ?k=<keyId>&d" . PHP_EOL
+                . "\tShow keys history: /history" . PHP_EOL
+                . "\tDownload keys history: /history?d" . PHP_EOL;
 
         if ($this->Options['show_keys']) {
             $message .= PHP_EOL . "Valid key ids: " . PHP_EOL;
@@ -135,8 +176,10 @@ class KeyManager
         ) {
             $this->Options = $settings['options'];
             $this->Keys = $settings['keys'];
+            $this->ConfigDir = dirname($configfile);
+            $this->History = $this->ConfigDir . DIRECTORY_SEPARATOR . $settings['history'];
         } else {
-            throw new Exception('Config file not found or not valid.');
+            throw new \Exception('Config file not found or not valid.');
         }
     }
     
@@ -157,43 +200,54 @@ class KeyManager
         $this->HelpFlag = (bool) $helpflag;
     }
     
+    public function setShowHistoryFlag($showhistoryflag)
+    {
+        $this->ShowHistoryFlag = (bool) $showhistoryflag;
+    }
+    
     public function run()
     {
+        $data = 'Unknown error';
+        $desc = 'error';
+
         if ($this->HelpFlag && $this->Options['show_help']) {
-            return self::output('Help', $this->getUsageMessage());
-        } 
-        
-        $keyid = empty($this->Keyid)
-            ? (
-                ($this->Options['default_first_key'] && !empty($this->Keys))
-                    ? array_keys($this->Keys)[0]
-                    : ''
-            )
-            : $this->Keyid;
-        
-        if (array_key_exists($keyid, $this->Keys)) {
-            $keyfile = $this->Keys[$keyid];
-            
-            if (file_exists($keyfile)) {
-                return self::output(
-                    'gpg_key', 
-                    file_get_contents($keyfile), 
-                    $this->DownloadFlag 
-                        ? self::OUTPUT_TYPE_FILE 
-                        : self::OUTPUT_TYPE_TEXT
-                );
+            $data = $this->getUsageMessage();
+            $desc = 'help';
+        } elseif ($this->ShowHistoryFlag) {
+            $data = file_exists($this->History)
+                ? file_get_contents($this->History)
+                : '';
+            $desc = 'gpg_history';
+        } else {
+            $keyid = empty($this->Keyid)
+                ? (
+                    ($this->Options['default_first_key'] && !empty($this->Keys))
+                        ? array_keys($this->Keys)[0]
+                        : ''
+                )
+                : $this->Keyid;
+
+            if (array_key_exists($keyid, $this->Keys)) {
+                $keyfile = $this->Keys[$keyid];
+                if (file_exists($keyfile)) {
+                    $data = file_get_contents($keyfile);
+                    $desc = $keyid . '.asc';
+                } else {
+                    $data = "Error: File corresponding to ID $keyid doesn't exist!" . PHP_EOL . PHP_EOL;
+                }
             } else {
-                return self::output(
-                    'Error', 
-                    "File: " . $keyfile . " doesn't exist!" . PHP_EOL . PHP_EOL
-                );
+                $data = 'Error: Invalid options or key id.' . PHP_EOL . PHP_EOL
+                    . ($this->Options['show_help'] ? $this->getUsageMessage() : '');
             }
         }
         
+        
         return self::output(
-            'Error', 
-            'Invalid options or key id.' . PHP_EOL . PHP_EOL
-            . ($this->Options['show_help'] ? $this->getUsageMessage() : '')
+            $desc, 
+            $data, 
+            $this->DownloadFlag 
+                ? self::OUTPUT_TYPE_FILE 
+                : self::OUTPUT_TYPE_TEXT
         );
     }
 }
