@@ -3,9 +3,15 @@ Simple PHP class to create a simple secure GPG key manager to allow downloading 
 
 Feel free to use, fork, share, etc. Create pull requests or issues if needed :)
 
-You can see it working at [gpg.hackan.net](https://gpg.hackan.net).
-
 *PHP version*: This works for **PHP v5.6+**. If you are on an older version, replace the constant-defined array in KeyManager.php:CONFIGSTRUCT for a variable, then call it in KeyManager.php:readConfig.
+
+## Usage example
+
+* Main (displays default key): [gpg.hackan.net](https://gpg.hackan.net).
+* History: [/history](https://gpg.hackan.net/history).
+* Show certain key: [/key/EEE697D3BBF1AA7F](https://gpg.hackan.net/key/EEE697D3BBF1AA7F).
+* Download certain key: append [?d](https://gpg.hackan.net/key/EEE697D3BBF1AA7F?d) to the request (you can append `?d` to *any* request to download the response).
+* Show help: [/?h](https://gpg.hackan.net/?h) or type any [invalid request](https://gpg.hackan.net/invalid).
 
 ## Deploy
 
@@ -19,6 +25,7 @@ Then add your key files ascii-armored in the `keys` directory: `gpg -a --export 
 {
     "options": {
         "show_help": true,
+        "show_history": false,
         "show_keys": false,
         "default_first_key": true
     },
@@ -40,7 +47,8 @@ Edit `config/config.json` (it's on a separated dir for security). You can change
 ### Options
 
 * show_help (true/false): help message when wrong parameter or value is input.
-* show_keys (true/false): show valid key values when showing help.
+* show_history (true/false): enables showing history when requested.
+* show_keys (true/false): show valid key id values when showing help.
 * default_first_key (true/false): if no key selected by the user, then show the first key.
 
 ### Keys
@@ -76,6 +84,7 @@ Provided by this repo:
 {
     "options": {
         "show_help": true,
+        "show_history": false,
         "show_keys": false,
         "default_first_key": true
     },
@@ -107,4 +116,3 @@ KeyManager by [HacKan](https://keybase.io/hackan) GNU GPL v3.0 or newer.
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-

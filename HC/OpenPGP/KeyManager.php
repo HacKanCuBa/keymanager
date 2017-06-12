@@ -6,7 +6,7 @@ namespace HC\OpenPGP;
  *    (must be ASCII armored!)
  *    by HacKan GNU GPL v3.0+
  *
- *    v2.1.8
+ *    v2.1.9
  *
  * ----------------------------------------------------------------------------
  *     Copyright (C) 2017 HacKan (https://hackan.net)
@@ -34,6 +34,7 @@ class KeyManager
     const CONFIGSTRUCT = [
         'options' => [
             'show_help' => false,
+            'show_history' => false,
             'show_keys'=> false,
             'default_first_key' => false,
         ],
@@ -114,16 +115,23 @@ class KeyManager
     protected function getUsageMessage()
     {
         $message = "Usage: " . PHP_EOL
-                . "\tDisplay key: ?k=<keyId>" . PHP_EOL
-                . "\tDownload key: ?k=<keyId>&d" . PHP_EOL
-                . "\tShow keys history: /history" . PHP_EOL
-                . "\tDownload keys history: /history?d" . PHP_EOL;
+                . "\tDisplay key:\t\t/key/<key id>" . PHP_EOL
+                . "\tDownload key:\t\t/key/<key id>?d" . PHP_EOL
+                . "\tShow keys history:\t/history" . PHP_EOL
+                . "\tDownload keys history:\t/history?d" . PHP_EOL;
 
-        if ($this->Options['show_keys']) {
-            $message .= PHP_EOL . "Valid key ids: " . PHP_EOL;
-            $keyids = array_keys($this->Keys);
-            foreach ($keyids as $k) {
-                $message .= "\t" . $k . PHP_EOL;
+        if (!empty($this->Keys)) {
+            if ($this->Options['show_keys']) {
+                $message .= PHP_EOL . "Valid key ids: " . PHP_EOL;
+                $keyids = array_keys($this->Keys);
+                foreach ($keyids as $k) {
+                    $message .= "\t" . $k . PHP_EOL;
+                }
+            }
+
+            if ($this->Options['default_first_key']) {
+                $message .= PHP_EOL . "Default key id: " . PHP_EOL
+                    . "\t" . array_keys($this->Keys)[0] . PHP_EOL;
             }
         }
 
@@ -185,9 +193,9 @@ class KeyManager
     
     public function setKeyid($keyid)
     {
-        $this->Keyid = ctype_xdigit($keyid) 
-            ? strtoupper($keyid) 
-            : '';
+        if (ctype_xdigit($keyid)) {
+            $this->Keyid = strtoupper($keyid);
+        }
     }
     
     public function setDownloadFlag($downloadflag)
@@ -204,19 +212,46 @@ class KeyManager
     {
         $this->ShowHistoryFlag = (bool) $showhistoryflag;
     }
+
+    public function parseRequest($requestURL)
+    {
+        if (!empty($requestURL)) {
+            // If behind proxy, REQUEST_URI might deliver full URL, remove domain and protocol
+            $requestURL = preg_replace(
+                '/^https?:\/\/.*?\//',
+                '/',
+                filter_var($requestURL, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW | FILTER_FLAG_STRIP_HIGH),
+                1
+            );
+
+            // Show help if requested, or if URL is not valid 
+            $this->setHelpFlag(
+                (preg_match('/.*?[\?&]h(&|=|$)/', $requestURL) === 1) 
+                ?: (preg_match('/^\/(k(ey)?(\/[a-fA-F0-9]{0,40}|\/)?\??d?|history[\?\/]?|\?(d&)?k(=[a-fA-F0-9]{0,40}|=)?(&d)?)?$/', $requestURL) != 1)
+            );
+
+            $this->setDownloadFlag((preg_match('/.*?[\?&]d(&|=|$)/', $requestURL) === 1));
+            $this->setShowHistoryFlag((preg_match('/^\/history[\?\/]?$/', $requestURL) === 1));
+
+                                                                    // Compatibility with old version key url
+            if (preg_match('/^\/(k(ey)?\/[a-fA-F0-9]{1,40}\??d?|\?(d&)?k=[a-fA-F0-9]{1,40}(&d)?)$/', $requestURL) === 1) {
+                $this->setKeyid(str_replace(['key', '?k=', '&k=', 'k', '/', '?d', '&d', '?'], '', $requestURL));
+            }
+        }
+    }
     
     public function run()
     {
         $data = 'Unknown error';
         $desc = 'error';
 
-        if ($this->HelpFlag && $this->Options['show_help']) {
+        if ($this->Options['show_help'] && $this->HelpFlag) {
             $data = $this->getUsageMessage();
             $desc = 'help';
-        } elseif ($this->ShowHistoryFlag) {
+        } elseif ($this->Options['show_history'] && $this->ShowHistoryFlag) {
             $data = file_exists($this->History)
                 ? file_get_contents($this->History)
-                : '';
+                : 'Error: No history file!' . PHP_EOL . PHP_EOL;
             $desc = 'gpg_history';
         } else {
             $keyid = empty($this->Keyid)

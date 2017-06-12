@@ -1,6 +1,7 @@
 {
     "options": {
         "show_help": true,
+        "show_history": false,
         "show_keys": false,
         "default_first_key": true
     },

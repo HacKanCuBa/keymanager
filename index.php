@@ -4,7 +4,7 @@
  * by HacKan GNU GPL v3.0+
  *
  * Example ready-to-use index file
- * v1.3.3
+ * v1.3.4
  *
  * ----------------------------------------------------------------------------
  *     Copyright (C) 2017 HacKan (https://hackan.net)
@@ -33,6 +33,7 @@
  * {
  *   "options": {
  *       "show_help": false,
+ *       "show_history": false,
  *       "show_keys": false,
  *       "default_first_key": false
  *   },
@@ -45,7 +46,8 @@
  *
  * Options:
  *  show_help (true/false): show help message when wrong parameter or value is issued.
- *  show_keys (true/false): show valid key values when showing help.
+ *  show_history (true/false): enables showing history when requested.
+ *  show_keys (true/false): show valid key id values when showing help.
  *  default_first_key (true/false): if no key selected, then show the first key.
  * 
  * All options are optional (can be missing), and have a false value by default.
@@ -76,16 +78,8 @@ try {
     die('Error: ' . $e->getMessage());
 }
 
-// Set options from user
-$keymanager->setDownloadFlag(isset($_GET['d']));
-$keymanager->setHelpFlag(isset($_GET['h']));
-$keymanager->setShowHistoryFlag(preg_match('/^\/history/', $_SERVER['REQUEST_URI']) === 1);
-
-/* KEY */
-$keymanager->setKeyid(
-    isset($_GET['k']) 
-        ? filter_input(INPUT_GET, 'k', FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW | FILTER_FLAG_STRIP_HIGH) 
-        : ''
-);
+// Set data from user (options and keyid)
+// using filter_input with INPUT_SERVER fails on certain host configurations, returning null; using filter_var is exactly the same and always works
+$keymanager->parseRequest(filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW | FILTER_FLAG_STRIP_HIGH));
 
 exit($keymanager->run());
