@@ -49,7 +49,7 @@
  *  show_history (true/false): enables showing history when requested.
  *  show_keys (true/false): show valid key id values when showing help.
  *  default_first_key (true/false): if no key selected, then show the first key.
- * 
+ *
  * All options are optional (can be missing), and have a false value by default.
  *
  * Keys:

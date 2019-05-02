@@ -2,7 +2,7 @@
 namespace HC\OpenPGP;
 
 /**
- *    Simple GPG Key manager, to display or allow key file download 
+ *    Simple GPG Key manager, to display or allow key file download
  *    (must be ASCII armored!)
  *    by HacKan GNU GPL v3.0+
  *
@@ -55,13 +55,13 @@ class KeyManager
      * @var string User provided KeyID
      */
     private $Keyid = '';
-    
+
     /**
      *
      * @var bool User provided Download Flag
      */
     private $DownloadFlag = false;
-    
+
     /**
      *
      * @var bool User provided Help Flag
@@ -79,7 +79,7 @@ class KeyManager
      * @var array Options (Options key from the Config)
      */
     private $Options = [];
-    
+
     /**
      *
      * @var array Keys (Keys key from the Config)
@@ -91,27 +91,27 @@ class KeyManager
      * @var string History file name (inside Config dir)
      */
     private $History = '';
-    
+
     protected function readConfig($configfile)
     {
-        if (file_exists($configfile) 
+        if (file_exists($configfile)
             && ($settings = json_decode(file_get_contents($configfile), true))
         ) {
             // NetBeans 8.1 shows error here but, worry not, the sentence is fine.
             $settings['options'] = isset($settings['options'])
                 ? array_merge(self::CONFIGSTRUCT['options'], $settings['options'])
                 : self::CONFIGSTRUCT['options'];
-            
+
             $settings['keys'] = isset($settings['keys']) ? $settings['keys'] : [];
 
             $settings['history'] = isset($settings['history']) ? $settings['history'] : '';
 
             return $settings;
         }
-        
+
         return [];
     }
-    
+
     protected function getUsageMessage()
     {
         $message = "Usage: " . PHP_EOL
@@ -137,14 +137,14 @@ class KeyManager
 
         return $message;
     }
-    
+
     protected static function outputHeaders(
-        $description, 
-        $size, 
+        $description,
+        $size,
         $outputType = self::OUTPUT_TYPE_TEXT
     ) {
         header('Content-Description: ' . $description);
-        
+
         switch ($outputType) {
             case self::OUTPUT_TYPE_FILE:
                 header('Content-Type: application/octet-stream');
@@ -156,13 +156,13 @@ class KeyManager
                 header('Content-Disposition: inline');
                 break;
         }
-        
+
         header('Expires: 0');
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
         header('Content-Length: ' . $size);
     }
-    
+
     public static function output($description, $content, $type = self::OUTPUT_TYPE_TEXT)
     {
         self::outputHeaders($description, strlen($content), $type);
@@ -174,12 +174,12 @@ class KeyManager
     {
         $this->setConfig($configfile);
     }
-    
+
     public function setConfig($configfile)
     {
         $settings = $this->readConfig($configfile);
-        
-        if (isset($settings['options']) 
+
+        if (isset($settings['options'])
             && isset($settings['keys'])
         ) {
             $this->Options = $settings['options'];
@@ -190,24 +190,24 @@ class KeyManager
             throw new \Exception('Config file not found or not valid.');
         }
     }
-    
+
     public function setKeyid($keyid)
     {
         if (ctype_xdigit($keyid)) {
             $this->Keyid = strtoupper($keyid);
         }
     }
-    
+
     public function setDownloadFlag($downloadflag)
     {
         $this->DownloadFlag = (bool) $downloadflag;
     }
-    
+
     public function setHelpFlag($helpflag)
     {
         $this->HelpFlag = (bool) $helpflag;
     }
-    
+
     public function setShowHistoryFlag($showhistoryflag)
     {
         $this->ShowHistoryFlag = (bool) $showhistoryflag;
@@ -224,9 +224,9 @@ class KeyManager
                 1
             );
 
-            // Show help if requested, or if URL is not valid 
+            // Show help if requested, or if URL is not valid
             $this->setHelpFlag(
-                (preg_match('/.*?[\?&]h(&|=|$)/', $requestURL) === 1) 
+                (preg_match('/.*?[\?&]h(&|=|$)/', $requestURL) === 1)
                 ?: (preg_match('/^\/(k(ey)?(\/[a-fA-F0-9]{0,40}|\/)?\??d?|history[\?\/]?|\?(d&)?k(=[a-fA-F0-9]{0,40}|=)?(&d)?)?$/', $requestURL) != 1)
             );
 
@@ -239,7 +239,7 @@ class KeyManager
             }
         }
     }
-    
+
     public function run()
     {
         $data = 'Unknown error';
@@ -275,13 +275,12 @@ class KeyManager
                     . ($this->Options['show_help'] ? $this->getUsageMessage() : '');
             }
         }
-        
-        
+
         return self::output(
-            $desc, 
-            $data, 
-            $this->DownloadFlag 
-                ? self::OUTPUT_TYPE_FILE 
+            $desc,
+            $data,
+            $this->DownloadFlag
+                ? self::OUTPUT_TYPE_FILE
                 : self::OUTPUT_TYPE_TEXT
         );
     }
