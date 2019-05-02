@@ -6,7 +6,7 @@ namespace HC\OpenPGP;
  *    (must be ASCII armored!)
  *    by HacKan GNU GPL v3.0+
  *
- *    v2.1.9
+ *    v2.2.0
  *
  * ----------------------------------------------------------------------------
  *     Copyright (C) 2017 HacKan (https://hackan.net)
@@ -195,6 +195,12 @@ class KeyManager
     {
         if (ctype_xdigit($keyid)) {
             $this->Keyid = strtoupper($keyid);
+        } else {
+            // Check if it's an email but be very restrictive
+            $email = preg_replace('/[^a-z0-9@.+]/', '', strtolower($keyid));
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $this->Keyid = $email;
+            }
         }
     }
 
@@ -227,15 +233,15 @@ class KeyManager
             // Show help if requested, or if URL is not valid
             $this->setHelpFlag(
                 (preg_match('/.*?[\?&]h(&|=|$)/', $requestURL) === 1)
-                ?: (preg_match('/^\/(k(ey)?(\/[a-fA-F0-9]{0,40}|\/)?\??d?|history[\?\/]?|\?(d&)?k(=[a-fA-F0-9]{0,40}|=)?(&d)?)?$/', $requestURL) != 1)
+                ?: (preg_match('/^\/(k(ey)?(\/[a-zA-Z0-9@.+]{0,80}|\/)?\??d?|history[\?\/]?|\?(d&)?k(=[a-zA-Z0-9@.+]{0,80}|=)?(&d)?)?$/', $requestURL) != 1)
             );
 
             $this->setDownloadFlag((preg_match('/.*?[\?&]d(&|=|$)/', $requestURL) === 1));
             $this->setShowHistoryFlag((preg_match('/^\/history[\?\/]?$/', $requestURL) === 1));
 
                                                                     // Compatibility with old version key url
-            if (preg_match('/^\/(k(ey)?\/[a-fA-F0-9]{1,40}\??d?|\?(d&)?k=[a-fA-F0-9]{1,40}(&d)?)$/', $requestURL) === 1) {
-                $this->setKeyid(str_replace(['key', '?k=', '&k=', 'k', '/', '?d', '&d', '?'], '', $requestURL));
+            if (preg_match('/^\/(k(ey)?\/[a-zA-Z0-9@.+]{1,80}\??d?|\?(d&)?k=[a-zA-Z0-9@.+]{1,80}(&d)?)$/', $requestURL) === 1) {
+                $this->setKeyid(str_replace(['/key', '?k=', '&k=', '/k', '/', '?d', '&d', '?'], '', $requestURL));
             }
         }
     }
